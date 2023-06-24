@@ -1,1 +1,31 @@
+pipeline {
+    agent any
+    
+tools{
+maven 'maven'
 
+}
+
+    stages {
+        stage('Git checkout') {
+            steps {
+                checkout scmGit(branches: [[name: 'master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/MithunTechnologiesDevOps/maven-web-application.git']])
+            }
+        }
+        stage('build') {
+            steps {
+             sh 'mvn package -f pom.xml'
+            }
+        }
+        stage('UploadArtifactsIntoNexus') {
+            steps {
+             nexusArtifactUploader artifacts: [[artifactId: 'maven-web-application', classifier: '', file: 'target/maven-web-application.war', type: 'war']], credentialsId: '49eb7294-c47a-4314-9224-7f1b23e36c50', groupId: 'com.mt', nexusUrl: '54.169.232.134:8081/', nexusVersion: 'nexus3', protocol: 'http', repository: 'maven-snapshots', version: '0.0.1-SNAPSHOT'
+            }
+        }
+         stage('Tomcat Deployememt') {
+            steps {
+                deploy adapters: [tomcat9(credentialsId: '2a1ace78-0d78-4045-8738-77788ba61316', path: '', url: 'http://54.255.249.215:8080/')], contextPath: null, war: '**/*.war'
+            }
+        }
+    }
+}
